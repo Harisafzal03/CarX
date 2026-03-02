@@ -91,7 +91,7 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold">Products</h1>
           <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{products.length} products in catalog</p>
         </div>
-        <Button onClick={openAdd} style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+        <Button onClick={openAdd} className="h-10 text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-zinc-800 transition-all active:scale-[0.98]">
           <Plus className="w-4 h-4" /> Add Product
         </Button>
       </div>
@@ -185,8 +185,7 @@ export default function ProductsPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1" disabled={isSubmitting}
-                style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+              <Button type="submit" className="flex-1 h-11 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : editProduct ? 'Update Product' : 'Create Product'}
               </Button>
             </div>

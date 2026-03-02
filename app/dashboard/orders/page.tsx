@@ -36,57 +36,88 @@ interface Sale {
 }
 
 const SHOP_NAME = 'CarX Auto Parts'
-const PHONE_1 = '+92 300 1234567'
-const PHONE_2 = '+92 321 7654321'
+const PHONE_1 = '+92 306 3784205'
+const PHONE_2 = '+92 313 6415972'
 
 function printSlip(sale: Sale) {
+  const logoUrl = window.location.origin + '/logo.png'
   const items = sale.sale_items.map(si => `
     <tr>
-      <td style="padding:6px 4px;border-bottom:1px solid #eee;font-size:13px">${si.product?.name ?? '—'}</td>
-      <td style="padding:6px 4px;border-bottom:1px solid #eee;text-align:center;font-size:13px">${si.quantity}</td>
-      <td style="padding:6px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px">PKR ${si.unit_price.toFixed(2)}</td>
-      <td style="padding:6px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px">PKR ${si.total_price.toFixed(2)}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #eee;font-size:13px">
+        <div style="font-weight:bold">${si.product?.name ?? '—'}</div>
+        <div style="font-size:11px;color:#666">${si.product?.sku ?? ''}</div>
+      </td>
+      <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:center;font-size:13px">${si.quantity}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px">${si.unit_price.toFixed(2)}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px;font-weight:bold">${si.total_price.toFixed(2)}</td>
     </tr>`).join('')
 
   const discount = sale.discount_amount > 0
     ? `<tr><td colspan="3" style="text-align:right;padding:4px;font-size:13px;color:#16a34a">Discount (${sale.discount_percentage}%)</td><td style="text-align:right;padding:4px;font-size:13px;color:#16a34a">-PKR ${sale.discount_amount.toFixed(2)}</td></tr>`
     : ''
 
-  const html = `<!DOCTYPE html><html><head><title>CarX Receipt</title>
-  <style>body{font-family:Arial,sans-serif;max-width:320px;margin:0 auto;padding:16px;color:#111}
-  h1{margin:0;font-size:22px;font-weight:900;color:#1d4ed8}p{margin:2px 0;font-size:12px}
-  table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:6px 4px;font-size:12px;text-align:left}
-  th:nth-child(2){text-align:center}th:nth-child(3),th:nth-child(4){text-align:right}
-  .total-row td{font-weight:bold;font-size:14px;padding:8px 4px;border-top:2px solid #1d4ed8;color:#1d4ed8}
-  .divider{border:none;border-top:1px dashed #ccc;margin:10px 0}
-  @media print{body{margin:0}}</style></head><body>
-  <div style="text-align:center;margin-bottom:12px">
+  const html = `<!DOCTYPE html><html><head><title>CarX Receipt - ${sale.id.slice(0, 8)}</title>
+  <style>
+    body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:380px;margin:0 auto;padding:20px;color:#111;line-height:1.4}
+    .header{text-align:center;margin-bottom:20px}
+    .logo{width:80px;height:80px;object-fit:contain;margin-bottom:10px;border-radius:12px;background:#000;padding:5px}
+    h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#000}
+    .meta-info{margin:15px 0;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .meta-info p{margin:0}
+    table{width:100%;border-collapse:collapse;margin:15px 0}
+    th{background:#f8f9fa;padding:8px 4px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:0.5px;color:#666;border-bottom:2px solid #000}
+    th:nth-child(2){text-align:center}th:nth-child(3),th:nth-child(4){text-align:right}
+    .total-table{width:100%;margin-top:10px}
+    .total-row td{font-weight:900;font-size:18px;padding:12px 4px;border-top:2px solid #000;color:#000}
+    .divider{border:none;border-top:1px dashed #ccc;margin:15px 0}
+    .footer{text-align:center;font-size:11px;color:#666;margin-top:30px;padding-top:15px;border-top:1px solid #eee}
+    @media print{body{padding:10px} .no-print{display:none}}
+  </style></head><body>
+  <div class="header">
+    <img src="${logoUrl}" class="logo" alt="CarX Logo">
     <h1>${SHOP_NAME}</h1>
-    <p>${PHONE_1} &nbsp;|&nbsp; ${PHONE_2}</p>
+    <p style="font-size:12px;margin:4px 0;font-weight:500">${PHONE_1} | ${PHONE_2}</p>
   </div>
-  <hr class="divider">
-  <div style="margin:10px 0">
-    <p><strong>Customer:</strong> ${sale.customer_name || 'Walk-in'}</p>
-    <p><strong>Date:</strong> ${new Date(sale.sale_date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-    <p><strong>Payment:</strong> ${sale.payment_method.toUpperCase()}</p>
+  
+  <div class="meta-info">
+    <div>
+      <p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Customer</p>
+      <p style="font-weight:bold;font-size:14px">${sale.customer_name || 'Walk-in'}</p>
+    </div>
+    <div style="text-align:right">
+      <p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Date</p>
+      <p style="font-weight:bold">${new Date(sale.sale_date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+    </div>
+    <div>
+      <p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Invoice #</p>
+      <p style="font-family:monospace;font-weight:bold">${sale.id.slice(0, 8).toUpperCase()}</p>
+    </div>
+    <div style="text-align:right">
+      <p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Payment</p>
+      <p style="font-weight:bold">${sale.payment_method.toUpperCase()}</p>
+    </div>
   </div>
-  <hr class="divider">
+
   <table>
-    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+    <thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
     <tbody>${items}</tbody>
   </table>
-  <hr class="divider">
-  <table>
-    <tr><td colspan="3" style="text-align:right;padding:4px;font-size:13px">Subtotal</td><td style="text-align:right;padding:4px;font-size:13px">PKR ${sale.subtotal.toFixed(2)}</td></tr>
+
+  <table class="total-table">
+    <tr><td colspan="3" style="text-align:right;padding:4px;font-size:13px;color:#666">Subtotal</td><td style="text-align:right;padding:4px;font-size:13px;font-weight:bold">PKR ${sale.subtotal.toFixed(2)}</td></tr>
     ${discount}
     <tr class="total-row"><td colspan="3" style="text-align:right">TOTAL</td><td style="text-align:right">PKR ${sale.final_total.toFixed(2)}</td></tr>
   </table>
-  <hr class="divider">
-  <p style="text-align:center;font-size:11px;color:#888;margin-top:12px">Thank you for your business!<br>${SHOP_NAME}</p>
-  <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script>
+
+  <div class="footer">
+    <p style="font-weight:bold;color:#000;font-size:13px;margin-bottom:4px">Thank you for your business!</p>
+    <p>Please keep this receipt for your records.<br>Software by CarX Systems</p>
+  </div>
+
+  <script>window.onload=()=>{setTimeout(() => { window.print(); window.onafterprint=()=>window.close(); }, 300)}<\/script>
   </body></html>`
 
-  const w = window.open('', '_blank', 'width=400,height=600')
+  const w = window.open('', '_blank', 'width=450,height=700')
   if (w) { w.document.write(html); w.document.close() }
 }
 
@@ -204,25 +235,25 @@ export default function OrdersPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(221 83% 53% / 0.15)' }}>
-              <Receipt className="w-5 h-5" style={{ color: 'hsl(221 83% 53%)' }} />
+        <Card className="glass overflow-hidden border-white/5">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/5 border border-black/10 flex-shrink-0">
+              <Receipt className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="text-xl font-bold">{formatCurrency(totalRevenue)}</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Total Revenue</p>
+              <p className="text-2xl font-bold tracking-tighter">{formatCurrency(totalRevenue)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Revenue</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(142 71% 45% / 0.15)' }}>
-              <TrendingUp className="w-5 h-5" style={{ color: 'hsl(142 71% 45%)' }} />
+        <Card className="glass overflow-hidden border-white/5">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/5 border border-black/10 flex-shrink-0">
+              <TrendingUp className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="text-xl font-bold">{formatCurrency(totalProfit)}</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Total Profit</p>
+              <p className="text-2xl font-bold tracking-tighter">{formatCurrency(totalProfit)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Profit</p>
             </div>
           </CardContent>
         </Card>
@@ -259,9 +290,10 @@ export default function OrdersPage() {
                     <TableCell className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(sale.sale_date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setSelected(sale)}><Eye className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(sale)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(sale)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setSelected(sale)} title="View Details"><Eye className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => printSlip(sale)} title="Print Receipt"><Printer className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(sale)} title="Edit Sale"><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(sale)} title="Delete Sale"><Trash2 className="w-4 h-4 text-red-400" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -320,8 +352,7 @@ export default function OrdersPage() {
                 <Button className="flex-1 gap-2" variant="outline" onClick={() => { setSelected(null); openEdit(selected) }}>
                   <Pencil className="w-4 h-4" /> Edit
                 </Button>
-                <Button className="flex-1 gap-2" onClick={() => printSlip(selected)}
-                  style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+                <Button className="flex-1 h-11 text-xs font-bold uppercase tracking-widest gap-2 bg-white text-black hover:bg-zinc-200 transition-colors" onClick={() => printSlip(selected)}>
                   <Printer className="w-4 h-4" /> Print Slip
                 </Button>
               </div>
@@ -375,8 +406,7 @@ export default function OrdersPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setEditSale(null)}>Cancel</Button>
-                <Button className="flex-1" onClick={handleEdit} disabled={saving}
-                  style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+                <Button className="flex-1 h-11 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200" onClick={handleEdit} disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>

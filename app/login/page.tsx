@@ -37,44 +37,48 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'linear-gradient(135deg, hsl(222 47% 8%) 0%, hsl(222 47% 14%) 100%)' }}
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ background: 'black' }}
     >
       {/* Background grid pattern */}
       <div
-        className="absolute inset-0 opacity-5"
+        className="absolute inset-0 opacity-10"
         style={{
-          backgroundImage: 'linear-gradient(hsl(221 83% 53%) 1px, transparent 1px), linear-gradient(90deg, hsl(221 83% 53%) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
+          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
         }}
       />
+      
+      {/* Subtle glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full" />
 
       <div className="w-full max-w-md relative z-10 animate-slide-up">
         {/* Logo area */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-3">
-            <Image src="/logo.jpeg" alt="CarX" width={80} height={80} className="rounded-2xl shadow-lg" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center mb-4 p-1 rounded-3xl bg-white/5 border border-white/10">
+            <Image src="/logo.png" alt="CarX" width={100} height={100} className="rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)]" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-gradient">CarX</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Auto Parts Inventory &amp; POS System
+          <h1 className="text-4xl font-bold tracking-tighter text-white uppercase italic">CarX</h1>
+          <p className="text-xs mt-2 font-medium tracking-[0.2em] uppercase text-zinc-500">
+            Internal Management System
           </p>
         </div>
 
-        <Card className="glass shadow-2xl">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-2 mb-6">
-              <ShieldCheck className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
-              <h2 className="text-lg font-semibold">Admin Login</h2>
+        <Card className="glass border-white/10 shadow-2xl">
+          <CardContent className="p-10">
+            <div className="flex items-center gap-2 mb-8 justify-center">
+              <ShieldCheck className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Authorized Personnel Only</h2>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email" className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 ml-1">Email Identifier</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@carx.com"
+                  placeholder="admin@carx.io"
+                  className="bg-white/5 border-white/10 h-12 focus:border-white/40 transition-colors"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -83,11 +87,12 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" title="Enter Password" className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 ml-1">Security Key</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  className="bg-white/5 border-white/10 h-12 focus:border-white/40 transition-colors"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -97,27 +102,28 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-11 text-base font-semibold"
+                className="w-full h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 transform active:scale-[0.98]"
                 disabled={loading}
                 style={{
-                  background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))',
-                  boxShadow: '0 4px 24px hsl(221 83% 53% / 0.3)',
+                  background: 'white',
+                  color: 'black',
+                  boxShadow: '0 8px 30px rgba(255, 255, 255, 0.15)',
                 }}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Signing in...
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Authenticating
                   </>
                 ) : (
-                  'Sign In'
+                  'Establish Session'
                 )}
               </Button>
             </form>
 
-            <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: 'hsl(var(--muted))' }}>
-              <p className="text-xs text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                Restricted access · CarX Admin Portal only
+            <div className="mt-8 pt-6 border-t border-white/5">
+              <p className="text-[10px] text-center uppercase tracking-tighter text-zinc-600">
+                Designated for CarX Auto Parts Group &copy; 2024
               </p>
             </div>
           </CardContent>

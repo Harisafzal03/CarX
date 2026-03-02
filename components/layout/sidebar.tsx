@@ -43,25 +43,24 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-64 h-screen sticky top-0 border-r"
+      className="flex flex-col w-64 h-screen sticky top-0 border-r bg-black"
       style={{
-        backgroundColor: 'hsl(var(--sidebar))',
-        borderColor: 'hsl(var(--sidebar-border))',
+        borderColor: '#18181b', // zinc-900 equivalent
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
-        <Image src="/logo.jpeg" alt="CarX" width={46} height={36} className="rounded-xl" />
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-zinc-900">
+        <Image src="/logo.png" alt="CarX" width={70} height={70} className="rounded-lg border border-zinc-800" />
         <div>
-          <span className="text-xl font-bold text-gradient">CarX</span>
-          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Auto Parts</p>
+          <span className="text-xl font-black tracking-tighter text-white">CarX</span>
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Auto Parts</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Menu
+      <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto">
+        <p className="px-3 mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+          Main Menu
         </p>
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
@@ -70,32 +69,27 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group relative overflow-hidden',
                 isActive
-                  ? 'text-white shadow-md'
-                  : 'hover:bg-white/5'
+                  ? 'text-black bg-white shadow-[0_4px_20px_rgba(255,255,255,0.15)]'
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
               )}
-              style={isActive ? {
-                background: 'linear-gradient(135deg, hsl(221 83% 53% / 0.9), hsl(240 83% 60% / 0.9))',
-                color: 'white',
-                boxShadow: '0 4px 12px hsl(221 83% 53% / 0.25)',
-              } : {
-                color: 'hsl(var(--sidebar-foreground))',
-              }}
             >
-              <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform group-hover:scale-110", isActive && "text-white")} />
-              {label}
+              <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110", isActive ? "text-black" : "text-zinc-500 group-hover:text-white")} />
+              <span className="relative z-10 uppercase tracking-widest text-[11px]">{label}</span>
+              {isActive && (
+                <div className="absolute left-0 w-1 h-6 bg-black rounded-r-full" />
+              )}
             </Link>
           )
         })}
       </nav>
 
       {/* Bottom: Logout */}
-      <div className="px-3 pb-4 border-t pt-4" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
+      <div className="px-3 pb-6 border-t border-zinc-900 pt-4">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full transition-all duration-200 hover:bg-red-500/10 group"
-          style={{ color: 'hsl(var(--sidebar-foreground))' }}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest w-full transition-all duration-200 hover:bg-red-500/10 text-zinc-500 group"
         >
           <LogOut className="w-4 h-4 flex-shrink-0 group-hover:text-red-400 transition-colors" />
           <span className="group-hover:text-red-400 transition-colors">Sign Out</span>

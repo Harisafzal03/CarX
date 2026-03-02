@@ -17,14 +17,14 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 const CHART_COLORS = [
-  'hsl(221, 83%, 53%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(280, 65%, 60%)',
-  'hsl(340, 75%, 55%)',
-  'hsl(190, 80%, 50%)',
-  'hsl(25, 95%, 55%)',
-  'hsl(160, 70%, 48%)',
+  '#2563eb', // Electric Blue
+  '#8b5cf6', // Neon Purple
+  '#d946ef', // Radiant Magenta
+  '#06b6d4', // Vibrant Cyan
+  '#f59e0b', // Vivid Orange
+  '#ec4899', // Deep Pink
+  '#10b981', // Emerald Green
+  '#f43f5e', // Rose Red
 ]
 
 interface DashboardData {
@@ -133,8 +133,8 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl animate-pulse" style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(280 65% 60%))' }} />
-          <p style={{ color: 'hsl(var(--muted-foreground))' }}>Loading dashboard...</p>
+          <div className="w-12 h-12 rounded-2xl animate-pulse bg-white/10 border border-white/20" />
+          <p className="text-sm font-medium tracking-widest uppercase opacity-50">Synchronizing Data...</p>
         </div>
       </div>
     )
@@ -164,42 +164,42 @@ export default function DashboardPage() {
           title="Today Revenue"
           value={formatCurrency(stats?.todayRevenue ?? 0)}
           icon={DollarSign}
-          color="hsl(221, 83%, 53%)"
+          color="black"
           trend="Today's sales"
         />
         <StatCard
           title="Today Profit"
           value={formatCurrency(stats?.todayProfit ?? 0)}
           icon={TrendingUp}
-          color="hsl(142, 71%, 45%)"
+          color="#18181b"
           trend="Net margin today"
         />
         <StatCard
           title="Monthly Revenue"
           value={formatCurrency(stats?.monthlyRevenue ?? 0)}
           icon={ShoppingBag}
-          color="hsl(280, 65%, 60%)"
+          color="#3f3f46"
           trend="This month"
         />
         <StatCard
           title="Monthly Profit"
           value={formatCurrency(stats?.monthlyProfit ?? 0)}
           icon={TrendingDown}
-          color="hsl(38, 92%, 50%)"
+          color="#52525b"
           trend="This month"
         />
         <StatCard
           title="Total Products"
           value={String(stats?.totalProducts ?? 0)}
           icon={Package}
-          color="hsl(190, 80%, 50%)"
+          color="#71717a"
           trend="Catalog size"
         />
         <StatCard
           title="Low Stock"
           value={String(stats?.lowStockCount ?? 0)}
           icon={AlertTriangle}
-          color="hsl(0, 84%, 60%)"
+          color="#ef4444"
           trend="Need reorder"
         />
       </div>
@@ -214,15 +214,16 @@ export default function DashboardPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={data?.dailyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 20%)" />
-                <XAxis dataKey="date" tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
-                <YAxis tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px', color: 'hsl(213 31% 91%)' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '8px', color: 'black', fontSize: '12px' }}
+                  cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                   formatter={(val: number | undefined) => formatCurrency(val ?? 0)}
                 />
-                <Bar dataKey="revenue" fill="hsl(221, 83%, 53%)" radius={[6, 6, 0, 0]} name="Revenue" />
-                <Bar dataKey="profit" fill="hsl(142, 71%, 45%)" radius={[6, 6, 0, 0]} name="Profit" />
+                <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} name="Revenue" />
+                <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} name="Profit" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -247,14 +248,14 @@ export default function DashboardPage() {
                   paddingAngle={3}
                 >
                   {data?.categoryData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="#ffffff" strokeWidth={2} />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px', color: 'hsl(213 31% 91%)' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '8px', color: 'black', fontSize: '12px' }}
                   formatter={(val: number | undefined) => formatCurrency(val ?? 0)}
                 />
-                <Legend formatter={(val) => <span style={{ color: 'hsl(213 31% 80%)', fontSize: 12 }}>{val}</span>} />
+                <Legend formatter={(val) => <span className="text-[10px] uppercase tracking-widest text-zinc-600">{val}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

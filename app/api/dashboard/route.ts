@@ -65,19 +65,25 @@ export async function GET(request: NextRequest) {
     s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
 
   // Low stock calculation
+  // Fetch all products to ensure those with 0 stock are included
+  const { data: allProducts } = await supabase.from('products').select('id, name, minimum_threshold')
+  
   const stockMap = new Map<string, { remaining: number; threshold: number }>()
+  
+  // Initialize map with all products at 0 stock
+  allProducts?.forEach(p => {
+    stockMap.set(p.id, { remaining: 0, threshold: p.minimum_threshold })
+  })
+
+  // Add stock from purchase_items
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   purchaseItems.data?.forEach((pi: any) => {
     const existing = stockMap.get(pi.product_id as string)
-    const prod = Array.isArray(pi.products) ? pi.products[0] : pi.products
-    const threshold: number = prod?.minimum_threshold ?? 5
-    const remaining: number = pi.remaining_quantity ?? 0
     if (existing) {
-      existing.remaining += remaining
-    } else {
-      stockMap.set(pi.product_id, { remaining, threshold })
+      existing.remaining += pi.remaining_quantity ?? 0
     }
   })
+
   const lowStockCount = Array.from(stockMap.values()).filter(v => v.remaining <= v.threshold).length
   const lowStockItems = Array.from(stockMap.entries())
     .filter(([, v]) => v.remaining <= v.threshold)

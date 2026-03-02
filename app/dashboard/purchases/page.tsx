@@ -158,7 +158,7 @@ export default function PurchasesPage() {
           <h1 className="text-2xl font-bold">Purchases</h1>
           <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Manage stock purchases & batch records</p>
         </div>
-        <Button onClick={openAdd} style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+        <Button onClick={openAdd} className="h-10 text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-zinc-800 transition-all active:scale-[0.98]">
           <Plus className="w-4 h-4" /> New Purchase
         </Button>
       </div>
@@ -366,8 +366,7 @@ export default function PurchasesPage() {
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting || uploading}
-                  style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+                <Button type="submit" disabled={isSubmitting || uploading} className="h-10 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200">
                   {isSubmitting || uploading ? 'Saving...' : editPurchase ? 'Update Purchase' : 'Save Purchase'}
                 </Button>
               </div>
@@ -456,8 +455,7 @@ export default function PurchasesPage() {
 
               <div className="flex justify-end gap-2 pt-1">
                 <Button variant="outline" onClick={() => setViewPurchase(null)}>Close</Button>
-                <Button onClick={() => { setViewPurchase(null); openEdit(viewPurchase) }}
-                  style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}>
+                <Button onClick={() => { setViewPurchase(null); openEdit(viewPurchase) }} className="h-10 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200">
                   <Pencil className="w-4 h-4 mr-1" /> Edit
                 </Button>
               </div>

@@ -12,7 +12,8 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/ui/sonner'
 import { useCartStore } from '@/lib/stores/cart'
 import { formatCurrency } from '@/lib/utils'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CheckCircle } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CheckCircle, Printer, X } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 import { ProductWithStock } from '@/lib/types'
 
@@ -24,6 +25,8 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash')
   const [checkingOut, setCheckingOut] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [lastSale, setLastSale] = useState<any>(null)
+  const [showReceiptModal, setShowReceiptModal] = useState(false)
 
   const {
     items, addItem, removeItem, updateQuantity, clearCart,
@@ -95,28 +98,129 @@ export default function POSPage() {
 
     setCheckingOut(false)
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      toast.error(err?.error ?? 'Sale failed. Check stock & try again.')
-      return
-    }
-
+    const sale = await res.json()
+    setLastSale({ ...saleData, id: sale.id, sale_items: items.map(i => ({ ...i, total_price: i.unitPrice * i.quantity, product: i.product })) })
     setSuccess(true)
+    setShowReceiptModal(true)
     clearCart()
     setCustomerName('')
-    setTimeout(() => { setSuccess(false); fetchProducts('') }, 3000)
+    fetchProducts('')
     toast.success('Sale completed successfully!')
+  }
+
+  const printReceipt = () => {
+    if (!lastSale) return
+    const logoUrl = window.location.origin + '/logo.png'
+    const itemsHtml = lastSale.items.map((item: any) => {
+      const product = products.find(p => p.id === item.product_id)
+      return `
+        <tr>
+          <td style="padding:8px 4px;border-bottom:1px solid #eee;font-size:13px">
+            <div style="font-weight:bold">${product?.name ?? 'Item'}</div>
+            <div style="font-size:11px;color:#666">${product?.sku ?? ''}</div>
+          </td>
+          <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:center;font-size:13px">${item.quantity}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px">${item.unit_price.toFixed(2)}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;font-size:13px;font-weight:bold">${(item.unit_price * item.quantity).toFixed(2)}</td>
+        </tr>`
+    }).join('')
+
+    const discountHtml = lastSale.discount_amount > 0
+      ? `<tr><td colspan="3" style="text-align:right;padding:4px;font-size:13px;color:#16a34a">Discount (${lastSale.discount_percentage}%)</td><td style="text-align:right;padding:4px;font-size:13px;color:#16a34a">-PKR ${lastSale.discount_amount.toFixed(2)}</td></tr>`
+      : ''
+
+    const html = `<!DOCTYPE html><html><head><title>CarX Receipt - ${lastSale.id.slice(0, 8)}</title>
+    <style>
+      body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:380px;margin:0 auto;padding:20px;color:#111;line-height:1.4}
+      .header{text-align:center;margin-bottom:20px}
+      .logo{width:80px;height:80px;object-fit:contain;margin-bottom:10px;border-radius:12px;background:#000;padding:5px}
+      h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#000}
+      .meta-info{margin:15px 0;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .meta-info p{margin:0}
+      table{width:100%;border-collapse:collapse;margin:15px 0}
+      th{background:#f8f9fa;padding:8px 4px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:0.5px;color:#666;border-bottom:2px solid #000}
+      th:nth-child(2){text-align:center}th:nth-child(3),th:nth-child(4){text-align:right}
+      .total-table{width:100%;margin-top:10px}
+      .total-row td{font-weight:900;font-size:18px;padding:12px 4px;border-top:2px solid #000;color:#000}
+      .footer{text-align:center;font-size:11px;color:#666;margin-top:30px;padding-top:15px;border-top:1px solid #eee}
+    </style></head><body>
+    <div class="header">
+      <img src="${logoUrl}" class="logo" alt="CarX Logo">
+      <h1>CarX Auto Parts</h1>
+      <p style="font-size:12px;margin:4px 0;font-weight:500">+92 306 3784205 | +92 313 6415972</p>
+    </div>
+    <div class="meta-info">
+      <div><p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Customer</p><p style="font-weight:bold;font-size:14px">${lastSale.customer_name || 'Walk-in'}</p></div>
+      <div style="text-align:right"><p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Date</p><p style="font-weight:bold">${new Date(lastSale.sale_date).toLocaleDateString()}</p></div>
+      <div><p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Invoice #</p><p style="font-family:monospace;font-weight:bold">${lastSale.id.slice(0, 8).toUpperCase()}</p></div>
+      <div style="text-align:right"><p style="color:#666;text-transform:uppercase;font-size:10px;font-weight:bold">Payment</p><p style="font-weight:bold">${lastSale.payment_method.toUpperCase()}</p></div>
+    </div>
+    <table><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>${itemsHtml}</tbody></table>
+    <table class="total-table">
+      <tr><td colspan="3" style="text-align:right;padding:4px;font-size:13px;color:#666">Subtotal</td><td style="text-align:right;padding:4px;font-size:13px;font-weight:bold">PKR ${lastSale.subtotal.toFixed(2)}</td></tr>
+      ${discountHtml}
+      <tr class="total-row"><td colspan="3" style="text-align:right">TOTAL</td><td style="text-align:right">PKR ${lastSale.final_total.toFixed(2)}</td></tr>
+    </table>
+    <div class="footer"><p style="font-weight:bold;color:#000;font-size:13px;margin-bottom:4px">Thank you for your business!</p><p>Please keep this receipt for your records.<br>Software by CarX Systems</p></div>
+    <script>window.onload=()=>{setTimeout(() => { window.print(); window.onafterprint=()=>window.close(); }, 300)}<\/script>
+    </body></html>`
+
+    const w = window.open('', '_blank', 'width=450,height=700')
+    if (w) { w.document.write(html); w.document.close() }
   }
 
   if (success) {
     return (
-      <div className="flex flex-col items-center justify-center h-[80vh] gap-4 animate-fade-in">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, hsl(142 71% 45%), hsl(160 70% 48%))' }}>
-          <CheckCircle className="w-10 h-10 text-white" />
+      <div className="flex flex-col items-center justify-center h-[80vh] gap-6 animate-fade-in text-center px-6">
+        <div className="w-24 h-24 rounded-full flex items-center justify-center bg-green-500/10 border-4 border-green-500 animate-bounce">
+          <CheckCircle className="w-12 h-12 text-green-500" />
         </div>
-        <h2 className="text-2xl font-bold">Sale Complete!</h2>
-        <p style={{ color: 'hsl(var(--muted-foreground))' }}>Stock updated. Ready for next sale.</p>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-black tracking-tight">SALE COMPLETED!</h2>
+          <p className="text-zinc-500 max-w-sm mx-auto">The transaction has been recorded and stock levels have been updated.</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm pt-4">
+          <Button 
+            className="flex-1 h-14 text-base font-bold uppercase tracking-widest gap-2 bg-black text-white hover:bg-zinc-800"
+            onClick={printReceipt}
+          >
+            <Printer className="w-5 h-5" /> Print Receipt
+          </Button>
+          <Button 
+            variant="outline"
+            className="flex-1 h-14 text-base font-bold uppercase tracking-widest"
+            onClick={() => { setSuccess(false); setShowReceiptModal(false); setLastSale(null); }}
+          >
+            Next Sale
+          </Button>
+        </div>
+
+        <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Printer className="w-5 h-5" />
+                Receipt Ready
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-6 text-center space-y-4">
+              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                <p className="text-sm text-zinc-500">Invoice Amount</p>
+                <p className="text-3xl font-black">{formatCurrency(lastSale?.final_total || 0)}</p>
+              </div>
+              <p className="text-sm text-zinc-500">Would you like to print a copy for the customer?</p>
+              <div className="flex gap-3 pt-2">
+                <Button className="flex-1 h-12 gap-2 bg-black text-white" onClick={printReceipt}>
+                  <Printer className="w-4 h-4" /> Print Now
+                </Button>
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setShowReceiptModal(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
@@ -185,8 +289,8 @@ export default function POSPage() {
       {/* Cart Panel */}
       <div className="w-96 flex flex-col border-l" style={{ borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--sidebar))' }}>
         <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))' }}>
-          <ShoppingCart className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
-          <h2 className="font-semibold">Cart</h2>
+          <ShoppingCart className="w-5 h-5 text-white" />
+          <h2 className="font-semibold text-white">Cart</h2>
           <Badge variant="secondary" className="ml-auto">{items.length} items</Badge>
           {items.length > 0 && (
             <Button variant="ghost" size="sm" onClick={clearCart} className="text-red-400 hover:text-red-300 h-6 px-2 text-xs">Clear</Button>
@@ -195,7 +299,7 @@ export default function POSPage() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {items.length === 0 && (
-            <div className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <div className="text-center py-8 text-white/50">
               <p className="text-sm">Cart is empty</p>
               <p className="text-xs mt-1">Click a product to add it</p>
             </div>
@@ -205,7 +309,7 @@ export default function POSPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{item.product.name}</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{formatCurrency(item.unitPrice)} each</p>
+                  <p className="text-xs text-white/60">{formatCurrency(item.unitPrice)} each</p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => removeItem(item.product.id)}>
                   <Trash2 className="w-3 h-3 text-red-400" />
@@ -222,7 +326,7 @@ export default function POSPage() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-                <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>
+                <span className="text-sm font-bold text-white">
                   {formatCurrency(item.unitPrice * item.quantity)}
                 </span>
               </div>
@@ -234,16 +338,16 @@ export default function POSPage() {
         <div className="p-4 border-t space-y-4" style={{ borderColor: 'hsl(var(--border))' }}>
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label className="text-xs">Customer Name (optional)</Label>
+              <Label className="text-xs text-white/90">Customer Name (optional)</Label>
               <Input className="h-8 text-sm" placeholder="Walk-in customer" value={customerName} onChange={e => setCustomerName(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Discount %</Label>
+              <Label className="text-xs text-white/90">Discount %</Label>
               <Input className="h-8 text-sm" type="number" min="0" max="100" placeholder="0"
                 value={discountPercentage || ''} onChange={e => setDiscountPercentage(Number(e.target.value))} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Payment Method</Label>
+              <Label className="text-xs text-white/90">Payment Method</Label>
               <Select value={paymentMethod} onValueChange={(v: 'cash' | 'online') => setPaymentMethod(v)}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -262,18 +366,20 @@ export default function POSPage() {
 
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span style={{ color: 'hsl(var(--muted-foreground))' }}>Subtotal</span>
-              <span>{formatCurrency(subtotal())}</span>
+              <span className="text-white/70">Subtotal</span>
+              <span className="text-white font-medium">{formatCurrency(subtotal())}</span>
             </div>
             {discountPercentage > 0 && (
-              <div className="flex justify-between text-green-400">
-                <span>Discount ({discountPercentage}%)</span>
-                <span>-{formatCurrency(discountAmount())}</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-white/70">Discount ({discountPercentage}%)</span>
+                <span className="text-green-400 font-medium">-{formatCurrency(discountAmount())}</span>
               </div>
             )}
-            <div className="flex justify-between text-base font-bold pt-1">
+            <div className="flex justify-between text-base font-bold pt-1 text-white">
               <span>Total</span>
-              <span style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(finalTotal())}</span>
+              <span className="text-[#2563eb] font-black">
+                {formatCurrency(finalTotal())}
+              </span>
             </div>
           </div>
 

@@ -102,9 +102,9 @@ export default function CategoriesPage() {
             <Button
               onClick={handleAdd}
               disabled={adding || !newName.trim()}
-              style={{ background: 'linear-gradient(135deg, hsl(221 83% 53%), hsl(240 83% 60%))' }}
+              className="h-10 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200 transition-all"
             >
-              {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {adding ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Plus className="w-4 h-4" />}
               Add
             </Button>
           </div>
@@ -125,9 +125,8 @@ export default function CategoriesPage() {
               <Card key={cat.id} className="group hover:scale-[1.01] transition-all duration-200">
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'hsl(221 83% 53% / 0.12)' }}>
-                      <Tag className="w-4 h-4" style={{ color: 'hsl(221 83% 53%)' }} />
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-black/5 border border-black/10">
+                      <Tag className="w-4 h-4 text-black" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">{cat.name}</p>

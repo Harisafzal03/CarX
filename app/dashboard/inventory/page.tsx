@@ -72,8 +72,8 @@ export default function InventoryPage() {
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(221 83% 53% / 0.15)' }}>
-              <Package className="w-5 h-5" style={{ color: 'hsl(221 83% 53%)' }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/5 border border-black/10">
+              <Package className="w-5 h-5 text-black" />
             </div>
             <div>
               <p className="text-2xl font-bold">{inventory.length}</p>
@@ -83,8 +83,8 @@ export default function InventoryPage() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(142 71% 45% / 0.15)' }}>
-              <Package className="w-5 h-5" style={{ color: 'hsl(142 71% 45%)' }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-400/10 border border-zinc-400/20">
+              <Package className="w-5 h-5 text-zinc-400" />
             </div>
             <div>
               <p className="text-2xl font-bold">{inventory.filter(i => i.stock > 0).length}</p>
@@ -94,8 +94,8 @@ export default function InventoryPage() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.15)' }}>
-              <AlertTriangle className="w-5 h-5" style={{ color: 'hsl(0 84% 60%)' }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-500/10 border border-red-500/20">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
             </div>
             <div>
               <p className="text-2xl font-bold">{lowCount}</p>
@@ -113,14 +113,11 @@ export default function InventoryPage() {
         </div>
         <button
           onClick={() => setFilterLow(!filterLow)}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-all border"
-          style={{
-            backgroundColor: filterLow ? 'hsl(0 84% 60% / 0.15)' : 'transparent',
-            borderColor: filterLow ? 'hsl(0 84% 60%)' : 'hsl(var(--border))',
-            color: filterLow ? 'hsl(0 84% 60%)' : 'hsl(var(--foreground))',
-          }}
+          className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border ${
+            filterLow ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-700'
+          }`}
         >
-          <AlertTriangle className="w-4 h-4 inline mr-1" />
+          <AlertTriangle className="w-3.5 h-3.5 inline mr-2" />
           Low Stock Only
         </button>
       </div>
@@ -149,7 +146,7 @@ export default function InventoryPage() {
                     <TableCell><Badge variant="outline" className="font-mono text-xs">{item.sku}</Badge></TableCell>
                     <TableCell><Badge variant="secondary">{item.category}</Badge></TableCell>
                     <TableCell>
-                      <span className={`text-lg font-bold`} style={{ color: item.isLowStock ? 'hsl(0 84% 60%)' : 'hsl(142 71% 45%)' }}>
+                      <span className={`text-lg font-bold tracking-tighter ${item.isLowStock ? 'text-red-500' : 'text-black'}`}>
                         {item.stock}
                       </span>
                     </TableCell>
