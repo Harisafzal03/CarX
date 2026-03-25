@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     topProducts,
     dailySales,
     categoryRevenue,
+    allSales,
   ] = await Promise.all([
     // Today sales
     supabase.from('sales').select('final_total, sale_items(profit)').gte('sale_date', todayStart.split('T')[0]),
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Total products count
     supabase.from('products').select('id', { count: 'exact', head: true }),
     // All purchase_items for stock calculation
-    supabase.from('purchase_items').select('product_id, remaining_quantity, products(minimum_threshold)'),
+    supabase.from('purchase_items').select('product_id, remaining_quantity, purchase_price_per_unit, products(minimum_threshold)'),
     // Fetch all products to ensure those with 0 stock are included
     supabase.from('products').select('id, name, minimum_threshold'),
     // Recent sales
@@ -58,6 +59,8 @@ export async function GET(request: NextRequest) {
     supabase.from('sale_items')
       .select('total_price, product:products(category)')
       .gte('created_at', monthStart),
+    // All time sales for total revenue KPI
+    supabase.from('sales').select('final_total'),
   ])
 
   // Calculate today stats
@@ -70,20 +73,25 @@ export async function GET(request: NextRequest) {
   const monthlyProfit = monthlySales.data?.reduce((s, sale) =>
     s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
 
+  // Calculate total lifetime revenue
+  const lifetimeRevenue = allSales.data?.reduce((s, sale) => s + (sale.final_total || 0), 0) ?? 0
+
   const stockMap = new Map<string, { remaining: number; threshold: number }>()
+  let totalStockCost = 0
   
   // Initialize map with all products at 0 stock
   allProducts.data?.forEach(p => {
     stockMap.set(p.id, { remaining: 0, threshold: p.minimum_threshold })
   })
 
-  // Add stock from purchase_items
+  // Add stock from purchase_items and calculate total cost
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   purchaseItems.data?.forEach((pi: any) => {
     const existing = stockMap.get(pi.product_id as string)
     if (existing) {
       existing.remaining += pi.remaining_quantity ?? 0
     }
+    totalStockCost += (pi.remaining_quantity ?? 0) * (pi.purchase_price_per_unit || 0)
   })
 
   const lowStockCount = Array.from(stockMap.values()).filter(v => v.remaining <= v.threshold).length
@@ -141,7 +149,16 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.revenue - a.revenue).slice(0, 8)
 
   return NextResponse.json({
-    stats: { todayRevenue, todayProfit, monthlyRevenue, monthlyProfit, totalProducts: totalProducts.count ?? 0, lowStockCount },
+    stats: { 
+      todayRevenue, 
+      todayProfit, 
+      monthlyRevenue, 
+      monthlyProfit, 
+      totalProducts: totalProducts.count ?? 0, 
+      lowStockCount,
+      totalStockCost,
+      lifetimeRevenue
+    },
     dailyChartData,
     topSellingProducts,
     categoryData,

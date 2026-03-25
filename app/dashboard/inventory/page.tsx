@@ -15,6 +15,7 @@ interface InventoryItem {
   category: string
   brand: string
   car_model: string | null
+  image_url: string | null
   minimum_threshold: number
   stock: number
   isLowStock: boolean
@@ -127,6 +128,7 @@ export default function InventoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Category</TableHead>
@@ -137,11 +139,23 @@ export default function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && <TableRow><TableCell colSpan={7} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading inventory...</TableCell></TableRow>}
-              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No items found.</TableCell></TableRow>}
+              {loading && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading inventory...</TableCell></TableRow>}
+              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No items found.</TableCell></TableRow>}
               {filtered.map(item => (
                 <React.Fragment key={item.id}>
                   <TableRow key={item.id} className="cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
+                    <TableCell>
+                      {item.image_url ? (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-black/5 bg-black/5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-black/5 border border-dashed border-black/10 flex items-center justify-center">
+                          <Package className="w-4 h-4 opacity-20" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell><Badge variant="outline" className="font-mono text-xs">{item.sku}</Badge></TableCell>
                     <TableCell><Badge variant="secondary">{item.category}</Badge></TableCell>
@@ -160,7 +174,7 @@ export default function InventoryPage() {
                   </TableRow>
                   {expandedId === item.id && item.batches.length > 0 && (
                     <TableRow key={`${item.id}-batches`}>
-                      <TableCell colSpan={7} className="p-0">
+                      <TableCell colSpan={8} className="p-0">
                         <div className="px-6 py-3" style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}>
                           <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Batch Details</p>
                           <div className="grid grid-cols-3 gap-2">

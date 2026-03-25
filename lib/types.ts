@@ -119,6 +119,7 @@ export interface DashboardStats {
   monthlyProfit: number
   totalProducts: number
   lowStockCount: number
+  totalStockCost: number
 }
 
 export interface CartItem {

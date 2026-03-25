@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from '@/components/ui/sonner'
 import { useCartStore } from '@/lib/stores/cart'
 import { formatCurrency } from '@/lib/utils'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CheckCircle, Printer, X } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CheckCircle, Printer, X, Package } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 import { ProductWithStock } from '@/lib/types'
@@ -27,6 +27,7 @@ export default function POSPage() {
   const [success, setSuccess] = useState(false)
   const [lastSale, setLastSale] = useState<any>(null)
   const [showReceiptModal, setShowReceiptModal] = useState(false)
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null)
 
   const {
     items, addItem, removeItem, updateQuantity, clearCart,
@@ -245,30 +246,44 @@ export default function POSPage() {
               return (
                 <Card key={product.id}
                   className="cursor-pointer hover:scale-[1.02] transition-all duration-200 relative overflow-hidden"
-                  onClick={() => handleAddToCart(product)}
                   style={{ borderColor: inCart ? 'hsl(var(--primary))' : undefined }}
                 >
                   {inCart && (
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full text-white text-xs flex items-center justify-center font-bold"
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full text-white text-xs flex items-center justify-center font-bold z-10"
                       style={{ background: 'hsl(var(--primary))' }}>
                       {inCart.quantity}
                     </div>
                   )}
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{product.name}</p>
+                    <div className="flex gap-3 mb-2">
+                      <div 
+                        className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-black/5 bg-black/5 group relative"
+                        onClick={(e) => { e.stopPropagation(); product.image_url && setEnlargedImage(product.image_url); }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-6 h-6 opacity-20" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0" onClick={() => handleAddToCart(product)}>
+                        <p className="font-semibold text-sm line-clamp-2">{product.name}</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{product.brand}</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <Badge variant="secondary" className="text-xs">{product.category}</Badge>
-                      <Badge variant={product.stock > 10 ? 'success' : product.stock > 0 ? 'warning' : 'destructive'} className="text-xs">
+                    <div className="flex items-center justify-between mt-2" onClick={() => handleAddToCart(product)}>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 h-4">{product.category}</Badge>
+                      <Badge variant={product.stock > 10 ? 'success' : product.stock > 0 ? 'warning' : 'destructive'} className="text-[10px] px-1.5 h-4">
                         {product.stock} in stock
                       </Badge>
                     </div>
                     {product.batches?.[0] && (
-                      <p className="text-base font-bold mt-2" style={{ color: 'hsl(var(--primary))' }}>
+                      <p className="text-base font-bold mt-2" style={{ color: 'hsl(var(--primary))' }} onClick={() => handleAddToCart(product)}>
                         {formatCurrency(product.batches[0].selling_price_per_unit)}
                       </p>
                     )}
@@ -306,14 +321,29 @@ export default function POSPage() {
           )}
           {items.map(item => (
             <div key={item.product.id} className="rounded-xl p-3" style={{ backgroundColor: 'hsl(var(--card))' }}>
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 bg-black/20 flex-shrink-0 cursor-pointer hover:bg-black/30 transition-all"
+                  onClick={() => item.product.image_url && setEnlargedImage(item.product.image_url)}
+                >
+                  {item.product.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-4 h-4 text-white/20" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.product.name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium truncate">{item.product.name}</p>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => removeItem(item.product.id)}>
+                      <Trash2 className="w-3 h-3 text-red-400" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-white/60">{formatCurrency(item.unitPrice)} each</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => removeItem(item.product.id)}>
-                  <Trash2 className="w-3 h-3 text-red-400" />
-                </Button>
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2">
@@ -390,6 +420,29 @@ export default function POSPage() {
           </Button>
         </div>
       </div>
+
+      {/* Enlarged Image Modal */}
+      <Dialog open={!!enlargedImage} onOpenChange={(o) => !o && setEnlargedImage(null)}>
+        <DialogContent className="max-w-4xl p-1 bg-black overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="hidden">
+            <DialogTitle>Image Preview</DialogTitle>
+          </DialogHeader>
+          {enlargedImage && (
+            <div className="relative w-full h-[80vh]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={enlargedImage} alt="Enlarged" className="w-full h-full object-contain" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-2 right-2 text-white bg-black/40 hover:bg-black/60 rounded-full"
+                onClick={() => setEnlargedImage(null)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

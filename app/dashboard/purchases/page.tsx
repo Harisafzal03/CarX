@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,15 @@ interface FormValues {
 interface Purchase {
   id: string; supplier_name: string; invoice_number: string; purchase_date: string
   total_amount: number; image_url?: string | null; created_at: string
-  purchase_items: { quantity: number; product: { name: string; sku: string } | null }[]
+  purchase_items: { 
+    id: string;
+    product_id: string;
+    quantity: number; 
+    purchase_price_per_unit: number; 
+    selling_price_per_unit: number; 
+    expiry_date?: string;
+    product: { name: string; sku: string } | null 
+  }[]
 }
 
 interface Product { id: string; name: string; sku: string; category: string }
@@ -55,12 +63,19 @@ export default function PurchasesPage() {
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
-  const items = watch('items')
+  const items = useWatch({ control, name: 'items' })
+
+  const totalPrice = React.useMemo(() => {
+    return items?.reduce((sum, item) => {
+      const q = Number(item.quantity) || 0
+      const p = Number(item.purchase_price_per_unit) || 0
+      return sum + (q * p)
+    }, 0) || 0
+  }, [items])
 
   useEffect(() => {
-    const total = items.reduce((s, i) => s + (Number(i.purchase_price_per_unit) || 0) * (Number(i.quantity) || 0), 0)
-    setValue('total_amount', total)
-  }, [items, setValue])
+    setValue('total_amount', totalPrice)
+  }, [totalPrice, setValue])
 
   const fetchData = async () => {
     setLoading(true)
@@ -104,19 +119,36 @@ export default function PurchasesPage() {
     setEditPurchase(p)
     setImageFile(null)
     setImagePreview(p.image_url ?? null)
-    reset({ supplier_name: p.supplier_name, invoice_number: p.invoice_number, purchase_date: p.purchase_date, total_amount: p.total_amount, items: [] })
+    reset({
+      supplier_name: p.supplier_name,
+      invoice_number: p.invoice_number,
+      purchase_date: p.purchase_date,
+      total_amount: p.total_amount,
+      items: p.purchase_items.map(i => ({
+        product_id: i.product_id,
+        quantity: i.quantity,
+        purchase_price_per_unit: i.purchase_price_per_unit,
+        selling_price_per_unit: i.selling_price_per_unit,
+        expiry_date: i.expiry_date || ''
+      }))
+    })
     setOpen(true)
   }
 
   const onSubmit = async (values: FormValues) => {
     const imageUrl = await uploadImage()
 
+    const finalValues = { ...values, total_amount: totalPrice }
     if (editPurchase) {
-      // Edit mode — only update header fields
+      // Edit mode — update header and potentially items
       const res = await fetch('/api/purchases', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editPurchase.id, supplier_name: values.supplier_name, invoice_number: values.invoice_number, purchase_date: values.purchase_date, image_url: imageUrl }),
+        body: JSON.stringify({
+          id: editPurchase.id,
+          ...finalValues,
+          image_url: imageUrl
+        }),
       })
       if (!res.ok) { toast.error('Failed to update purchase'); return }
       toast.success('Purchase updated!')
@@ -125,7 +157,7 @@ export default function PurchasesPage() {
       const res = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, image_url: imageUrl }),
+        body: JSON.stringify({ ...finalValues, image_url: imageUrl }),
       })
       if (!res.ok) { const e = await res.json(); toast.error(e?.error ?? 'Failed to save'); return }
       toast.success('Purchase recorded & stock updated!')
@@ -139,7 +171,7 @@ export default function PurchasesPage() {
     fetchData()
   }
 
-  const calcTotal = () => items.reduce((s, i) => s + (Number(i.purchase_price_per_unit) || 0) * (Number(i.quantity) || 0), 0)
+
 
   return (
     <div className="p-6 space-y-6">
@@ -273,7 +305,7 @@ export default function PurchasesPage() {
               <div className="space-y-2">
                 <Label>Total (auto-computed)</Label>
                 <div className="flex h-9 items-center px-3 rounded-md border text-sm font-semibold" style={{ borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--muted)/0.4)', color: 'hsl(var(--primary))' }}>
-                  {formatCurrency(calcTotal())}
+                  {formatCurrency(totalPrice)}
                 </div>
               </div>
             </div>
@@ -301,38 +333,37 @@ export default function PurchasesPage() {
               </div>
             </div>
 
-            {!editPurchase && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Purchase Items</Label>
-                    <Button type="button" size="sm" variant="outline"
-                      onClick={() => append({ product_id: '', quantity: 1, purchase_price_per_unit: 0, selling_price_per_unit: 0, expiry_date: '' })}>
-                      <Plus className="w-3 h-3" /> Add Item
-                    </Button>
-                  </div>
-                  {fields.map((field, idx) => (
-                    <div key={field.id} className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'hsl(var(--muted))' }}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Item {idx + 1}</span>
-                        {fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(idx)}>
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </Button>
-                        )}
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Purchase Items</Label>
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={() => append({ product_id: '', quantity: 1, purchase_price_per_unit: 0, selling_price_per_unit: 0, expiry_date: '' })}>
+                    <Plus className="w-3 h-3" /> Add Item
+                  </Button>
+                </div>
+                {fields.map((field, idx) => (
+                  <div key={field.id} className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'hsl(var(--muted))' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Item {idx + 1}</span>
+                      {fields.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(idx)}>
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-xs">Product *</Label>
+                        <Select value={watch(`items.${idx}.product_id`)} onValueChange={v => setValue(`items.${idx}.product_id`, v)}>
+                          <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                          <SelectContent>
+                            {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1 col-span-2">
-                          <Label className="text-xs">Product *</Label>
-                          <Select onValueChange={v => setValue(`items.${idx}.product_id`, v)}>
-                            <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-                            <SelectContent>
-                              {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
+                      <div className="space-y-1">
                           <Label className="text-xs">Quantity *</Label>
                           <Input type="number" {...register(`items.${idx}.quantity`, { valueAsNumber: true })} placeholder="1" />
                         </div>
@@ -340,29 +371,42 @@ export default function PurchasesPage() {
                           <Label className="text-xs">Purchase Price/Unit *</Label>
                           <Input type="number" step="0.01" {...register(`items.${idx}.purchase_price_per_unit`, { valueAsNumber: true })} placeholder="0.00" />
                         </div>
+                        <div className="space-y-2 col-span-2 p-3 rounded-lg border border-dashed border-white/10 bg-white/5">
+                          <Label className="text-[10px] uppercase font-bold text-zinc-500">Row Total Helper</Label>
+                          <div className="flex gap-3 items-center">
+                            <Input 
+                              type="number" 
+                              placeholder="Type total to calc unit price" 
+                              className="h-8 text-xs" 
+                              onChange={(e) => {
+                                const total = Number(e.target.value);
+                                const qty = Number(watch(`items.${idx}.quantity`)) || 1;
+                                if (total > 0) setValue(`items.${idx}.purchase_price_per_unit`, Number((total / qty).toFixed(2)));
+                              }}
+                            />
+                            <div className="text-xs font-mono text-zinc-400 whitespace-nowrap">
+                              Current: {formatCurrency((Number(watch(`items.${idx}.purchase_price_per_unit`)) || 0) * (Number(watch(`items.${idx}.quantity`)) || 0))}
+                            </div>
+                          </div>
+                        </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Selling Price/Unit *</Label>
                           <Input type="number" step="0.01" {...register(`items.${idx}.selling_price_per_unit`, { valueAsNumber: true })} placeholder="0.00" />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Expiry Date (optional)</Label>
-                          <Input type="date" {...register(`items.${idx}.expiry_date`)} />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Expiry Date (optional)</Label>
+                        <Input type="date" {...register(`items.${idx}.expiry_date`)} />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                  </div>
+                ))}
+              </div>
+            </>
 
             <div className="flex items-center justify-between pt-2">
               <div>
-                {!editPurchase && (
-                  <>
-                    <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Computed Total</p>
-                    <p className="text-xl font-bold" style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(calcTotal())}</p>
-                  </>
-                )}
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Computed Total</p>
+                <p className="text-xl font-bold" style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(totalPrice)}</p>
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

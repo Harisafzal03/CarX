@@ -76,16 +76,36 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
   const body = await request.json()
-  const { id, supplier_name, invoice_number, purchase_date, image_url } = body
+  const { id, supplier_name, invoice_number, purchase_date, total_amount, image_url, items } = body
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-  const { data, error } = await supabase
+  // Update purchase header
+  const { data: purchase, error: purchaseError } = await supabase
     .from('purchases')
-    .update({ supplier_name, invoice_number, purchase_date, image_url })
+    .update({ supplier_name, invoice_number, purchase_date, total_amount, image_url })
     .eq('id', id)
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  if (purchaseError) return NextResponse.json({ error: purchaseError.message }, { status: 500 })
+
+  // Update items prices if items were provided
+  if (items && Array.isArray(items)) {
+    for (const item of items) {
+      // Find the item for this purchase and product
+      // We assume one row per product per purchase for simplicity here
+      await supabase
+        .from('purchase_items')
+        .update({ 
+          purchase_price_per_unit: item.purchase_price_per_unit,
+          selling_price_per_unit: item.selling_price_per_unit,
+          quantity: item.quantity,
+          expiry_date: item.expiry_date?.trim() || null
+        })
+        .eq('purchase_id', id)
+        .eq('product_id', item.product_id)
+    }
+  }
+
+  return NextResponse.json(purchase)
 }

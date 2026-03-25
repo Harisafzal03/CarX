@@ -51,7 +51,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 20%)" />
                 <XAxis dataKey="date" tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
                 <YAxis tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px' }} formatter={(v: number | undefined) => formatCurrency(v ?? 0)} />
+                <Tooltip contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px' }} formatter={(v: any) => formatCurrency(Number(v) || 0)} />
                 <Bar dataKey="revenue" fill="hsl(221, 83%, 53%)" radius={[6, 6, 0, 0]} name="Revenue" />
               </BarChart>
             </ResponsiveContainer>
@@ -65,7 +65,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 20%)" />
                 <XAxis dataKey="date" tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
                 <YAxis tick={{ fill: 'hsl(215 20% 55%)', fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px' }} formatter={(v: number | undefined) => formatCurrency(v ?? 0)} />
+                <Tooltip contentStyle={{ background: 'hsl(222 47% 13%)', border: '1px solid hsl(222 47% 20%)', borderRadius: '12px' }} formatter={(v: any) => formatCurrency(Number(v) || 0)} />
                 <Line type="monotone" dataKey="profit" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} dot={{ fill: 'hsl(142, 71%, 45%)' }} name="Profit" />
               </LineChart>
             </ResponsiveContainer>

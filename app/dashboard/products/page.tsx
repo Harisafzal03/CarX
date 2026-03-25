@@ -21,6 +21,7 @@ interface FormValues {
   car_model?: string
   description?: string
   minimum_threshold: number
+  image_url?: string
 }
 
 interface Product {
@@ -31,6 +32,7 @@ interface Product {
   brand: string
   car_model: string | null
   description: string | null
+  image_url: string | null
   minimum_threshold: number
   created_at: string
 }
@@ -44,6 +46,9 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     defaultValues: { minimum_threshold: 5 },
@@ -71,28 +76,88 @@ export default function ProductsPage() {
     return () => clearTimeout(t)
   }, [search])
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      setPreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setPreview(null)
+    if (editProduct) {
+      // Clear image_url but only if we want to remove existing. 
+      // For now, let's just clear the local preview. 
+    }
+  }
+
+  const uploadToCloudinary = async (): Promise<string | null> => {
+    if (!imageFile) return editProduct?.image_url || null
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', imageFile)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      return data.url
+    } catch (e) {
+      toast.error('Image upload failed')
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const onSubmit = async (values: FormValues) => {
+    let finalImageUrl = await uploadToCloudinary()
+    
+    // If user explicitly removed preview (preview is null) and it had an image before
+    if (!preview && !imageFile && editProduct?.image_url) {
+      finalImageUrl = null // User wants to remove the image
+    }
+
     const url = '/api/products'
     const method = editProduct ? 'PUT' : 'POST'
-    const body = editProduct ? { ...values, id: editProduct.id } : values
+    const body = editProduct 
+      ? { ...values, id: editProduct.id, image_url: finalImageUrl } 
+      : { ...values, image_url: finalImageUrl }
 
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (!res.ok) { toast.error('Failed to save product'); return }
     toast.success(editProduct ? 'Product updated' : 'Product created')
     setOpen(false)
     setEditProduct(null)
+    setImageFile(null)
+    setPreview(null)
     reset()
     fetchProducts(search)
   }
 
   const openEdit = (p: Product) => {
     setEditProduct(p)
-    reset({ name: p.name, category: p.category, brand: p.brand, car_model: p.car_model ?? '', description: p.description ?? '', minimum_threshold: p.minimum_threshold })
+    reset({ 
+      name: p.name, 
+      category: p.category, 
+      brand: p.brand, 
+      car_model: p.car_model ?? '', 
+      description: p.description ?? '', 
+      minimum_threshold: p.minimum_threshold 
+    })
     setValue('category', p.category)
+    setPreview(p.image_url)
     setOpen(true)
   }
 
-  const openAdd = () => { setEditProduct(null); reset({ minimum_threshold: 5 }); setOpen(true) }
+  const openAdd = () => { 
+    setEditProduct(null)
+    setImageFile(null)
+    setPreview(null)
+    reset({ minimum_threshold: 5 })
+    setOpen(true) 
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -131,6 +196,7 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Category</TableHead>
@@ -141,10 +207,22 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && <TableRow><TableCell colSpan={7} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading...</TableCell></TableRow>}
-              {!loading && products.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No products found. Create your first product.</TableCell></TableRow>}
+              {loading && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading...</TableCell></TableRow>}
+              {!loading && products.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No products found. Create your first product.</TableCell></TableRow>}
               {products.map(p => (
                 <TableRow key={p.id}>
+                  <TableCell>
+                    {p.image_url ? (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-black/5 bg-black/5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-black/5 border border-dashed border-black/10 flex items-center justify-center">
+                        <Package className="w-5 h-5 opacity-20" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell><Badge variant="outline" className="font-mono text-xs">{p.sku}</Badge></TableCell>
                   <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
@@ -177,6 +255,43 @@ export default function ProductsPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            
+            {/* Image Upload Area */}
+            <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-black/10 hover:border-black/20 bg-black/5 transition-all">
+              <div className="relative group w-24 h-24 flex-shrink-0">
+                {preview ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="Preview" className="w-full h-full object-cover rounded-lg shadow-sm" />
+                    <button 
+                      type="button" 
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full rounded-lg bg-black/10 flex items-center justify-center">
+                    <Package className="w-8 h-8 opacity-20" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="product-image" className="cursor-pointer">
+                  <span className="text-sm font-semibold text-black hover:underline">Upload Product Photo</span>
+                  <p className="text-xs text-zinc-500">JPG, PNG or WEBP (Max 5MB)</p>
+                </Label>
+                <Input 
+                  id="product-image" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleImageChange}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Product Name *</Label>
@@ -215,8 +330,8 @@ export default function ProductsPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1 h-11 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : editProduct ? 'Update Product' : 'Create Product'}
+              <Button type="submit" className="flex-1 h-11 text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200" disabled={isSubmitting || uploading}>
+                {isSubmitting || uploading ? 'Processing...' : editProduct ? 'Update Product' : 'Create Product'}
               </Button>
             </div>
           </form>

@@ -35,6 +35,8 @@ interface DashboardData {
     monthlyProfit: number
     totalProducts: number
     lowStockCount: number
+    totalStockCost: number
+    lifetimeRevenue: number
   }
   dailyChartData: { date: string; revenue: number; profit: number }[]
   topSellingProducts: { name: string; category: string; qty: number; revenue: number }[]
@@ -160,7 +162,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Today Revenue"
           value={formatCurrency(stats?.todayRevenue ?? 0)}
@@ -190,11 +192,25 @@ export default function DashboardPage() {
           trend="This month"
         />
         <StatCard
+          title="Lifetime Sales"
+          value={formatCurrency(stats?.lifetimeRevenue ?? 0)}
+          icon={TrendingUp}
+          color="#2563eb"
+          trend="All time revenue"
+        />
+        <StatCard
           title="Total Products"
           value={String(stats?.totalProducts ?? 0)}
           icon={Package}
           color="#71717a"
           trend="Catalog size"
+        />
+        <StatCard
+          title="Total Stock Value"
+          value={formatCurrency(stats?.totalStockCost ?? 0)}
+          icon={RefreshCw}
+          color="#10b981"
+          trend="At cost price"
         />
         <StatCard
           title="Low Stock"
@@ -221,7 +237,7 @@ export default function DashboardPage() {
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '8px', color: 'black', fontSize: '12px' }}
                   cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-                  formatter={(val: number | undefined) => formatCurrency(val ?? 0)}
+                  formatter={(val: any) => formatCurrency(Number(val ?? 0))}
                 />
                 <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} name="Revenue" />
                 <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} name="Profit" />
@@ -254,7 +270,7 @@ export default function DashboardPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '8px', color: 'black', fontSize: '12px' }}
-                  formatter={(val: number | undefined) => formatCurrency(val ?? 0)}
+                  formatter={(val: any) => formatCurrency(Number(val ?? 0))}
                 />
                 <Legend formatter={(val) => <span className="text-[10px] uppercase tracking-widest text-zinc-600">{val}</span>} />
               </PieChart>
