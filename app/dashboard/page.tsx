@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/utils'
@@ -108,11 +108,12 @@ export default function DashboardPage() {
     setLoading(false)
   }, [])
 
+  const supabase = useMemo(() => createClient(), [])
+
   useEffect(() => {
     fetchDashboard()
 
     // Realtime subscriptions
-    const supabase = createClient()
     const salesChannel = supabase
       .channel('dashboard-sales')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales' }, () => fetchDashboard())
@@ -127,7 +128,7 @@ export default function DashboardPage() {
       supabase.removeChannel(salesChannel)
       supabase.removeChannel(purchasesChannel)
     }
-  }, [fetchDashboard])
+  }, [fetchDashboard, supabase])
 
   if (loading) {
     return (

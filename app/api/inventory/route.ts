@@ -8,19 +8,24 @@ export async function GET(request: NextRequest) {
 
   const search = searchParams.get('search') || ''
 
-  // Get all products with stock
+  // Get all products with stock and purchase items in parallel
   let productQ = supabase.from('products').select('*').order('name')
   if (productId) productQ = productQ.eq('id', productId)
   if (search) productQ = productQ.or(`name.ilike.%${search}%,sku.ilike.%${search}%`)
 
-  const { data: products, error } = await productQ
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const [productsResponse, purchaseItemsResponse] = await Promise.all([
+    productQ,
+    supabase
+      .from('purchase_items')
+      .select('id, product_id, remaining_quantity, batch_number, purchase_price_per_unit, selling_price_per_unit, expiry_date, created_at')
+      .gt('remaining_quantity', 0)
+      .order('created_at')
+  ])
 
-  const { data: purchaseItems } = await supabase
-    .from('purchase_items')
-    .select('id, product_id, remaining_quantity, batch_number, purchase_price_per_unit, selling_price_per_unit, expiry_date, created_at')
-    .gt('remaining_quantity', 0)
-    .order('created_at')
+  if (productsResponse.error) return NextResponse.json({ error: productsResponse.error.message }, { status: 500 })
+  
+  const products = productsResponse.data
+  const purchaseItems = purchaseItemsResponse.data
 
   // Calculate stock per product (dynamic)
   const stockMap = new Map<string, number>()

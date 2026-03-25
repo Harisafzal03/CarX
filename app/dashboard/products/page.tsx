@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/components/ui/sonner'
-import { Plus, Search, Package, Edit } from 'lucide-react'
+import { Plus, Search, Package, Edit, Trash2, AlertTriangle } from 'lucide-react'
 
 interface FormValues {
   name: string
@@ -42,24 +42,34 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     defaultValues: { minimum_threshold: 5 },
   })
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    const [prodRes, catRes] = await Promise.all([
-      fetch(`/api/products?search=${search}`),
-      fetch('/api/categories'),
-    ])
-    setProducts(await prodRes.json())
-    const cats: { name: string }[] = await catRes.json()
+  const fetchCategories = async () => {
+    const res = await fetch('/api/categories')
+    const cats: { name: string }[] = await res.json()
     setCategories(cats.map(c => c.name))
+  }
+
+  const fetchProducts = async (q: string) => {
+    setLoading(true)
+    const res = await fetch(`/api/products?search=${q}`)
+    setProducts(await res.json())
     setLoading(false)
   }
 
-  useEffect(() => { fetchProducts() }, [search])
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchProducts(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
   const onSubmit = async (values: FormValues) => {
     const url = '/api/products'
@@ -72,7 +82,7 @@ export default function ProductsPage() {
     setOpen(false)
     setEditProduct(null)
     reset()
-    fetchProducts()
+    fetchProducts(search)
   }
 
   const openEdit = (p: Product) => {
@@ -83,6 +93,21 @@ export default function ProductsPage() {
   }
 
   const openAdd = () => { setEditProduct(null); reset({ minimum_threshold: 5 }); setOpen(true) }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const res = await fetch(`/api/products?id=${deleteTarget.id}`, { method: 'DELETE' })
+    setDeleting(false)
+    if (!res.ok) {
+      const err = await res.json()
+      toast.error(err.error || 'Failed to delete product')
+      return
+    }
+    toast.success('Product deleted')
+    setDeleteTarget(null)
+    fetchProducts(search)
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -127,9 +152,14 @@ export default function ProductsPage() {
                   <TableCell style={{ color: 'hsl(var(--muted-foreground))' }}>{p.car_model || '—'}</TableCell>
                   <TableCell>{p.minimum_threshold}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(p)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -190,6 +220,35 @@ export default function ProductsPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="w-5 h-5" /> Delete Product
+            </DialogTitle>
+          </DialogHeader>
+          {deleteTarget && (
+            <div className="space-y-4">
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Are you sure you want to delete <strong style={{ color: 'hsl(var(--foreground))' }}>{deleteTarget.name}</strong>? 
+                This action cannot be undone and may fail if the product is linked to existing sales or purchases.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+                <Button 
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white" 
+                  onClick={handleDelete} 
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Yes, Delete'}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

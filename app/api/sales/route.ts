@@ -80,14 +80,15 @@ export async function POST(request: NextRequest) {
 
   if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
 
-  // Deduct stock from purchase_items (FIFO batch deduction)
-  for (const item of items) {
-    const { error: stockError } = await supabase.rpc('deduct_stock', {
+  // Deduct stock from purchase_items (FIFO batch deduction) in parallel
+  await Promise.all(items.map(item =>
+    supabase.rpc('deduct_stock', {
       p_purchase_item_id: item.purchase_item_id,
       p_quantity: item.quantity,
+    }).then(({ error }) => {
+      if (error) console.error('Stock deduction error:', error)
     })
-    if (stockError) console.error('Stock deduction error:', stockError)
-  }
+  ))
 
   return NextResponse.json(sale, { status: 201 })
 }
@@ -130,12 +131,14 @@ export async function DELETE(request: NextRequest) {
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
 
-  // Restore stock to each batch (reverse the deduction)
-  for (const item of saleItems ?? []) {
-    await supabase.rpc('restore_stock', {
-      p_purchase_item_id: item.purchase_item_id,
-      p_quantity: item.quantity,
-    })
+  // Restore stock to each batch (reverse the deduction) in parallel
+  if (saleItems) {
+    await Promise.all(saleItems.map(item =>
+      supabase.rpc('restore_stock', {
+        p_purchase_item_id: item.purchase_item_id,
+        p_quantity: item.quantity,
+      })
+    ))
   }
 
   // Delete sale (cascade deletes sale_items)

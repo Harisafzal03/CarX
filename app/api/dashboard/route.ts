@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export const maxDuration = 30
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
@@ -15,6 +18,7 @@ export async function GET(request: NextRequest) {
     monthlySales,
     totalProducts,
     purchaseItems,
+    allProducts,
     recentSales,
     recentPurchases,
     topProducts,
@@ -29,6 +33,8 @@ export async function GET(request: NextRequest) {
     supabase.from('products').select('id', { count: 'exact', head: true }),
     // All purchase_items for stock calculation
     supabase.from('purchase_items').select('product_id, remaining_quantity, products(minimum_threshold)'),
+    // Fetch all products to ensure those with 0 stock are included
+    supabase.from('products').select('id, name, minimum_threshold'),
     // Recent sales
     supabase.from('sales')
       .select('*, sale_items(profit)')
@@ -64,14 +70,10 @@ export async function GET(request: NextRequest) {
   const monthlyProfit = monthlySales.data?.reduce((s, sale) =>
     s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
 
-  // Low stock calculation
-  // Fetch all products to ensure those with 0 stock are included
-  const { data: allProducts } = await supabase.from('products').select('id, name, minimum_threshold')
-  
   const stockMap = new Map<string, { remaining: number; threshold: number }>()
   
   // Initialize map with all products at 0 stock
-  allProducts?.forEach(p => {
+  allProducts.data?.forEach(p => {
     stockMap.set(p.id, { remaining: 0, threshold: p.minimum_threshold })
   })
 
