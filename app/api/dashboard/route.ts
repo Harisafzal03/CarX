@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       .select('total_price, product:products(category)')
       .gte('created_at', monthStart),
     // All time sales for total revenue KPI
-    supabase.from('sales').select('final_total'),
+    supabase.from('sales').select('final_total, labour_cost, payment_method'),
   ])
 
   // Calculate today stats
@@ -75,6 +75,8 @@ export async function GET(request: NextRequest) {
 
   // Calculate total lifetime revenue
   const lifetimeRevenue = allSales.data?.reduce((s, sale) => s + (sale.final_total || 0), 0) ?? 0
+  const lifetimeLabourCost = allSales.data?.reduce((s, sale) => s + (sale.labour_cost || 0), 0) ?? 0
+  const lifetimeCreditSales = allSales.data?.filter(s => s.payment_method === 'credit').reduce((s, sale) => s + (sale.final_total || 0), 0) ?? 0
 
   const stockMap = new Map<string, { remaining: number; threshold: number }>()
   let totalStockCost = 0
@@ -157,7 +159,9 @@ export async function GET(request: NextRequest) {
       totalProducts: totalProducts.count ?? 0, 
       lowStockCount,
       totalStockCost,
-      lifetimeRevenue
+      lifetimeRevenue,
+      lifetimeLabourCost,
+      lifetimeCreditSales
     },
     dailyChartData,
     topSellingProducts,

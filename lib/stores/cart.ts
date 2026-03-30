@@ -11,12 +11,15 @@ interface CartStore {
   discountPercentage: number
   setDiscountPercentage: (pct: number) => void
   discountAmount: () => number
+  labourCost: number
+  setLabourCost: (cost: number) => void
   finalTotal: () => number
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
   discountPercentage: 0,
+  labourCost: 0,
 
   addItem: (product, purchaseItemId, purchasePrice, unitPrice) => {
     const pPrice = Number(purchasePrice) || 0
@@ -53,7 +56,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }))
   },
 
-  clearCart: () => set({ items: [], discountPercentage: 0 }),
+  clearCart: () => set({ items: [], discountPercentage: 0, labourCost: 0 }),
 
   subtotal: () => {
     const sub = get().items.reduce((sum, i) => sum + (Number(i.unitPrice) || 0) * i.quantity, 0)
@@ -61,6 +64,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
   },
 
   setDiscountPercentage: (pct) => set({ discountPercentage: Number(pct) || 0 }),
+  
+  setLabourCost: (cost) => set({ labourCost: Number(cost) || 0 }),
 
   discountAmount: () => {
     const sub = get().subtotal()
@@ -69,7 +74,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
   },
 
   finalTotal: () => {
-    const total = get().subtotal() - get().discountAmount()
+    const total = get().subtotal() + get().labourCost - get().discountAmount()
     return isNaN(total) ? 0 : total
   },
 }))

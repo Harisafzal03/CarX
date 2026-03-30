@@ -21,6 +21,8 @@ interface FormValues {
   car_model?: string
   description?: string
   minimum_threshold: number
+  purchase_price: number
+  selling_price: number
   image_url?: string
 }
 
@@ -34,6 +36,8 @@ interface Product {
   description: string | null
   image_url: string | null
   minimum_threshold: number
+  purchase_price: number
+  selling_price: number
   created_at: string
 }
 
@@ -51,7 +55,7 @@ export default function ProductsPage() {
   const [uploading, setUploading] = useState(false)
 
   const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    defaultValues: { minimum_threshold: 5 },
+    defaultValues: { minimum_threshold: 5, purchase_price: 0, selling_price: 0 },
   })
 
   const fetchCategories = async () => {
@@ -144,7 +148,9 @@ export default function ProductsPage() {
       brand: p.brand, 
       car_model: p.car_model ?? '', 
       description: p.description ?? '', 
-      minimum_threshold: p.minimum_threshold 
+      minimum_threshold: p.minimum_threshold,
+      purchase_price: p.purchase_price ?? 0,
+      selling_price: p.selling_price ?? 0
     })
     setValue('category', p.category)
     setPreview(p.image_url)
@@ -155,7 +161,7 @@ export default function ProductsPage() {
     setEditProduct(null)
     setImageFile(null)
     setPreview(null)
-    reset({ minimum_threshold: 5 })
+    reset({ minimum_threshold: 5, purchase_price: 0, selling_price: 0 })
     setOpen(true) 
   }
 
@@ -202,6 +208,8 @@ export default function ProductsPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead>Car Model</TableHead>
+                <TableHead>Purchase Price</TableHead>
+                <TableHead>Sale Price</TableHead>
                 <TableHead>Min Stock</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -228,6 +236,8 @@ export default function ProductsPage() {
                   <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
                   <TableCell>{p.brand}</TableCell>
                   <TableCell style={{ color: 'hsl(var(--muted-foreground))' }}>{p.car_model || '—'}</TableCell>
+                  <TableCell className="font-semibold text-zinc-600">Rs {p.purchase_price ?? 0}</TableCell>
+                  <TableCell className="font-semibold text-green-600">Rs {p.selling_price ?? 0}</TableCell>
                   <TableCell>{p.minimum_threshold}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -320,9 +330,21 @@ export default function ProductsPage() {
                 <Input {...register('car_model')} placeholder="e.g. Toyota Corolla" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Min Stock Threshold</Label>
-              <Input type="number" {...register('minimum_threshold', { valueAsNumber: true, min: 0 })} placeholder="5" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Purchase Price / Unit</Label>
+                <Input type="number" step="0.01" {...register('purchase_price', { valueAsNumber: true, min: 0 })} placeholder="0.00" />
+              </div>
+              <div className="space-y-2">
+                <Label>Sale Price / Unit</Label>
+                <Input type="number" step="0.01" {...register('selling_price', { valueAsNumber: true, min: 0 })} placeholder="0.00" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Min Stock Threshold</Label>
+                <Input type="number" {...register('minimum_threshold', { valueAsNumber: true, min: 0 })} placeholder="5" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Description</Label>

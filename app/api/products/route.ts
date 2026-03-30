@@ -11,6 +11,8 @@ const productSchema = z.object({
   description: z.string().nullable().optional(),
   image_url: z.string().nullable().optional(),
   minimum_threshold: z.number().int().min(0).default(5),
+  purchase_price: z.number().min(0).default(0),
+  selling_price: z.number().min(0).default(0),
 })
 
 export async function GET(request: NextRequest) {

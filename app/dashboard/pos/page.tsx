@@ -22,7 +22,7 @@ export default function POSPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [customerName, setCustomerName] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online' | 'credit'>('cash')
   const [checkingOut, setCheckingOut] = useState(false)
   const [success, setSuccess] = useState(false)
   const [lastSale, setLastSale] = useState<any>(null)
@@ -31,7 +31,7 @@ export default function POSPage() {
 
   const {
     items, addItem, removeItem, updateQuantity, clearCart,
-    subtotal, discountPercentage, setDiscountPercentage, discountAmount, finalTotal
+    subtotal, discountPercentage, setDiscountPercentage, discountAmount, labourCost, setLabourCost, finalTotal
   } = useCartStore()
 
   const fetchProducts = async (q: string) => {
@@ -79,6 +79,7 @@ export default function POSPage() {
       subtotal: subtotal(),
       discount_percentage: discountPercentage,
       discount_amount: discountAmount(),
+      labour_cost: labourCost,
       final_total: finalTotal(),
       payment_method: paymentMethod,
       sale_date: new Date().toISOString().split('T')[0],
@@ -377,8 +378,13 @@ export default function POSPage() {
                 value={discountPercentage || ''} onChange={e => setDiscountPercentage(Number(e.target.value))} />
             </div>
             <div className="space-y-1">
+              <Label className="text-xs text-white/90">Labour Cost</Label>
+              <Input className="h-8 text-sm" type="number" min="0" placeholder="0"
+                value={labourCost || ''} onChange={e => setLabourCost(Number(e.target.value))} />
+            </div>
+            <div className="space-y-1">
               <Label className="text-xs text-white/90">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'online') => setPaymentMethod(v)}>
+              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'online' | 'credit') => setPaymentMethod(v)}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">
@@ -386,6 +392,9 @@ export default function POSPage() {
                   </SelectItem>
                   <SelectItem value="online">
                     <span className="flex items-center gap-2"><CreditCard className="w-4 h-4" />Online</span>
+                  </SelectItem>
+                  <SelectItem value="credit">
+                    <span className="flex items-center gap-2"><CreditCard className="w-4 h-4" />Credit</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -399,10 +408,16 @@ export default function POSPage() {
               <span className="text-white/70">Subtotal</span>
               <span className="text-white font-medium">{formatCurrency(subtotal())}</span>
             </div>
-            {discountPercentage > 0 && (
+            {discountAmount() > 0 && (
               <div className="flex justify-between items-center text-sm">
                 <span className="text-white/70">Discount ({discountPercentage}%)</span>
                 <span className="text-green-400 font-medium">-{formatCurrency(discountAmount())}</span>
+              </div>
+            )}
+            {labourCost > 0 && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-white/70">Labour Cost</span>
+                <span className="text-white font-medium">+{formatCurrency(labourCost)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-bold pt-1 text-white">

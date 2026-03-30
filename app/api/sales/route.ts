@@ -16,7 +16,8 @@ const saleSchema = z.object({
   discount_percentage: z.number().min(0).max(100).default(0),
   discount_amount: z.number().nonnegative(),
   final_total: z.number().nonnegative(),
-  payment_method: z.enum(['cash', 'online']),
+  labour_cost: z.number().min(0).default(0),
+  payment_method: z.enum(['cash', 'online', 'credit']),
   sale_date: z.string(),
   items: z.array(saleItemSchema).min(1),
 })
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
   const body = await request.json()
-  const { id, customer_name, discount_percentage, discount_amount, final_total, payment_method, sale_date } = body
+  const { id, customer_name, discount_percentage, discount_amount, labour_cost, final_total, payment_method, sale_date } = body
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
   // Recalculate subtotal from existing sale_items
@@ -108,7 +109,7 @@ export async function PUT(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('sales')
-    .update({ customer_name, discount_percentage, discount_amount, final_total, payment_method, sale_date, subtotal })
+    .update({ customer_name, discount_percentage, discount_amount, labour_cost, final_total, payment_method, sale_date, subtotal })
     .eq('id', id)
     .select()
     .single()

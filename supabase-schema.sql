@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS products (
   description         TEXT,
   image_url           TEXT,
   minimum_threshold   INTEGER NOT NULL DEFAULT 5,
+  purchase_price      NUMERIC(12,2) NOT NULL DEFAULT 0,
+  selling_price       NUMERIC(12,2) NOT NULL DEFAULT 0,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -51,8 +53,9 @@ CREATE TABLE IF NOT EXISTS sales (
   subtotal            NUMERIC(12,2) NOT NULL,
   discount_percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
   discount_amount     NUMERIC(12,2) NOT NULL DEFAULT 0,
+  labour_cost         NUMERIC(12,2) NOT NULL DEFAULT 0,
   final_total         NUMERIC(12,2) NOT NULL,
-  payment_method      TEXT NOT NULL CHECK (payment_method IN ('cash', 'online')),
+  payment_method      TEXT NOT NULL CHECK (payment_method IN ('cash', 'online', 'credit')),
   sale_date           DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -142,6 +145,22 @@ INSERT INTO products (name, sku, category, brand, car_model, minimum_threshold) 
   ('Car Air Freshener - Ocean',         'PER-CRX-1004', 'Car Perfumes','CarX',    NULL,              10),
   ('Meguiar's Car Polish - 500ml',      'POL-MEG-1005', 'Polish',      'Meguiar''s', NULL,           5),
   ('Universal Window Shade',            'SHA-CRX-1006', 'Window Shades','CarX',  NULL,              8),
-  ('Castrol Engine Oil 5W-30 (4L)',     'OIL-CAS-1007', 'Oil Cans',   'Castrol', NULL,              3),
-  ('Car Bluetooth Speaker 6.5"',        'SPK-JBL-1008', 'Speakers',   'JBL',     NULL,              5)
+  ('Castrol Engine Oil 5W-30 4L',   'OIL-CAS-1007', 'Oil Cans',    'Castrol',   3),
+  ('JBL Bluetooth Speaker 6.5"',    'SPK-JBL-1008', 'Speakers',    'JBL',       5)
 ON CONFLICT (sku) DO NOTHING;
+
+-- ── 12. BACKFILL SCRIPT ──────────────────────────────────────
+-- Run this once to sync all existing product prices with their most recent purchases
+UPDATE products p
+SET 
+  purchase_price = latest.purchase_price_per_unit,
+  selling_price = latest.selling_price_per_unit
+FROM (
+  SELECT DISTINCT ON (product_id) 
+    product_id, 
+    purchase_price_per_unit, 
+    selling_price_per_unit
+  FROM purchase_items
+  ORDER BY product_id, created_at DESC
+) AS latest
+WHERE p.id = latest.product_id;

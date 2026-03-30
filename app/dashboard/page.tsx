@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import {
   TrendingUp, TrendingDown, DollarSign, Package,
-  AlertTriangle, ShoppingBag, RefreshCw,
+  AlertTriangle, ShoppingBag, RefreshCw, CreditCard, Wrench
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -37,6 +37,8 @@ interface DashboardData {
     lowStockCount: number
     totalStockCost: number
     lifetimeRevenue: number
+    lifetimeLabourCost: number
+    lifetimeCreditSales: number
   }
   dailyChartData: { date: string; revenue: number; profit: number }[]
   topSellingProducts: { name: string; category: string; qty: number; revenue: number }[]
@@ -162,7 +164,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Today Revenue"
           value={formatCurrency(stats?.todayRevenue ?? 0)}
@@ -218,6 +220,20 @@ export default function DashboardPage() {
           icon={AlertTriangle}
           color="#ef4444"
           trend="Need reorder"
+        />
+        <StatCard
+          title="Total Credit Sales"
+          value={formatCurrency(stats?.lifetimeCreditSales ?? 0)}
+          icon={CreditCard}
+          color="#8b5cf6"
+          trend="All time unpaid"
+        />
+        <StatCard
+          title="Total Labour Cost"
+          value={formatCurrency(stats?.lifetimeLabourCost ?? 0)}
+          icon={Wrench}
+          color="#f59e0b"
+          trend="Total charged"
         />
       </div>
 

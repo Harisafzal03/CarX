@@ -20,6 +20,7 @@ interface Sale {
   subtotal: number
   discount_percentage: number
   discount_amount: number
+  labour_cost: number
   final_total: number
   payment_method: string
   sale_date: string
@@ -135,7 +136,8 @@ export default function OrdersPage() {
 
   const [editCustomer, setEditCustomer] = useState('')
   const [editDiscount, setEditDiscount] = useState(0)
-  const [editPayment, setEditPayment] = useState<'cash' | 'online'>('cash')
+  const [editLabourCost, setEditLabourCost] = useState(0)
+  const [editPayment, setEditPayment] = useState<'cash' | 'online' | 'credit'>('cash')
   const [editDate, setEditDate] = useState('')
 
   const fetchSales = async () => {
@@ -161,7 +163,8 @@ export default function OrdersPage() {
     setEditSale(sale)
     setEditCustomer(sale.customer_name ?? '')
     setEditDiscount(sale.discount_percentage)
-    setEditPayment(sale.payment_method as 'cash' | 'online')
+    setEditLabourCost(sale.labour_cost || 0)
+    setEditPayment(sale.payment_method as 'cash' | 'online' | 'credit')
     setEditDate(sale.sale_date)
   }
 
@@ -170,11 +173,11 @@ export default function OrdersPage() {
     setSaving(true)
     const subtotal = editSale.sale_items.reduce((s, i) => s + i.total_price, 0)
     const discountAmount = (subtotal * editDiscount) / 100
-    const finalTotal = subtotal - discountAmount
+    const finalTotal = subtotal + editLabourCost - discountAmount
     const res = await fetch('/api/sales', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editSale.id, customer_name: editCustomer || null, discount_percentage: editDiscount, discount_amount: discountAmount, final_total: finalTotal, payment_method: editPayment, sale_date: editDate }),
+      body: JSON.stringify({ id: editSale.id, customer_name: editCustomer || null, discount_percentage: editDiscount, discount_amount: discountAmount, labour_cost: editLabourCost, final_total: finalTotal, payment_method: editPayment, sale_date: editDate }),
     })
     setSaving(false)
     if (!res.ok) { toast.error('Failed to update sale'); return }
@@ -341,6 +344,7 @@ export default function OrdersPage() {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span style={{ color: 'hsl(var(--muted-foreground))' }}>Subtotal</span><span>{formatCurrency(selected.subtotal)}</span></div>
                 {selected.discount_amount > 0 && <div className="flex justify-between text-green-400"><span>Discount</span><span>-{formatCurrency(selected.discount_amount)}</span></div>}
+                {selected.labour_cost > 0 && <div className="flex justify-between"><span>Labour Cost</span><span>+{formatCurrency(selected.labour_cost)}</span></div>}
                 <div className="flex justify-between font-bold text-base"><span>Total</span><span style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(selected.final_total)}</span></div>
                 <div className="flex justify-between" style={{ color: 'hsl(142 71% 45%)' }}>
                   <span>Net Profit</span>
@@ -380,12 +384,17 @@ export default function OrdersPage() {
                 <Input type="number" min={0} max={100} value={editDiscount} onChange={e => setEditDiscount(Number(e.target.value))} />
               </div>
               <div className="space-y-2">
+                <Label>Labour Cost</Label>
+                <Input type="number" min={0} value={editLabourCost} onChange={e => setEditLabourCost(Number(e.target.value))} />
+              </div>
+              <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <Select value={editPayment} onValueChange={v => setEditPayment(v as 'cash' | 'online')}>
+                <Select value={editPayment} onValueChange={v => setEditPayment(v as 'cash' | 'online' | 'credit')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">Cash</SelectItem>
                     <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="credit">Credit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -399,9 +408,13 @@ export default function OrdersPage() {
                   <span>Discount ({editDiscount}%)</span>
                   <span>-{formatCurrency((editSale.sale_items.reduce((s, i) => s + i.total_price, 0) * editDiscount) / 100)}</span>
                 </div>
+                <div className="flex justify-between" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span>Labour</span>
+                  <span>+{formatCurrency(editLabourCost)}</span>
+                </div>
                 <div className="flex justify-between font-bold mt-1" style={{ color: 'hsl(var(--primary))' }}>
                   <span>New Total</span>
-                  <span>{formatCurrency(editSale.sale_items.reduce((s, i) => s + i.total_price, 0) * (1 - editDiscount / 100))}</span>
+                  <span>{formatCurrency(editSale.sale_items.reduce((s, i) => s + i.total_price, 0) * (1 - editDiscount / 100) + editLabourCost)}</span>
                 </div>
               </div>
               <div className="flex gap-2">

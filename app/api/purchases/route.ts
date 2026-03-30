@@ -70,6 +70,17 @@ export async function POST(request: NextRequest) {
 
   if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
 
+  // Auto-sync products base prices with this latest purchase
+  for (const item of items) {
+    await supabase
+      .from('products')
+      .update({
+        purchase_price: item.purchase_price_per_unit,
+        selling_price: item.selling_price_per_unit,
+      })
+      .eq('id', item.product_id)
+  }
+
   return NextResponse.json(purchase, { status: 201 })
 }
 
@@ -104,6 +115,15 @@ export async function PUT(request: NextRequest) {
         })
         .eq('purchase_id', id)
         .eq('product_id', item.product_id)
+
+      // Auto-sync products base prices with this updated purchase
+      await supabase
+        .from('products')
+        .update({
+          purchase_price: item.purchase_price_per_unit,
+          selling_price: item.selling_price_per_unit,
+        })
+        .eq('id', item.product_id)
     }
   }
 

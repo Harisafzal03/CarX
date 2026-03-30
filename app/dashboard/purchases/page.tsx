@@ -253,6 +253,8 @@ export default function PurchasesPage() {
                                   <span className="font-medium">{pi.product?.name}</span>
                                   <Badge variant="outline" className="text-xs font-mono">{pi.product?.sku}</Badge>
                                   <span style={{ color: 'hsl(var(--muted-foreground))' }}>Qty: {pi.quantity}</span>
+                                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Buy: {formatCurrency(pi.purchase_price_per_unit)}</span>
+                                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Sell: {formatCurrency(pi.selling_price_per_unit)}</span>
                                 </div>
                               ))}
                             </div>
