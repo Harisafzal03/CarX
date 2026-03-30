@@ -10,7 +10,7 @@ A full-stack inventory management and point-of-sale system built for auto parts 
 
 ### 🛒 POS / Sales
 - Search and add products to cart in real-time
-- Apply percentage discounts
+- Apply percentage discounts 
 - Cash / Online payment modes
 - FIFO batch-based stock deduction on checkout
 - Stale cart detection and auto-recovery
