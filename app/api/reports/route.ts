@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   // Revenue & profit by day for the last 30 days
   let query = supabase
     .from('sales')
-    .select('sale_date, final_total, sale_items(profit)')
+    .select('sale_date, final_total, discount_amount, sale_items(profit)')
     .order('sale_date', { ascending: true })
 
   if (from) query = query.gte('sale_date', from)
@@ -21,10 +21,10 @@ export async function GET(request: NextRequest) {
 
   // Aggregate by date
   const dayMap = new Map<string, { revenue: number; profit: number }>()
-  sales?.forEach((s: { sale_date: string; final_total: number; sale_items: { profit: number }[] }) => {
+  sales?.forEach((s: { sale_date: string; final_total: number; discount_amount: number; sale_items: { profit: number }[] }) => {
     const d = s.sale_date
     const existing = dayMap.get(d)
-    const profit = s.sale_items?.reduce((p, si) => p + si.profit, 0) ?? 0
+    const profit = (s.sale_items?.reduce((p, si) => p + si.profit, 0) ?? 0) - (s.discount_amount || 0)
     if (existing) {
       existing.revenue += s.final_total
       existing.profit += profit
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
   const totalRevenue = sales?.reduce((s, sale) => s + sale.final_total, 0) ?? 0
   const totalProfit = sales?.reduce((s, sale) =>
-    s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
+    s + ((sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0) - (sale.discount_amount || 0)), 0) ?? 0
 
   return NextResponse.json({ chartData, totalRevenue, totalProfit })
 }

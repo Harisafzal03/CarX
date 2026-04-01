@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
     allSales,
   ] = await Promise.all([
     // Today sales
-    supabase.from('sales').select('final_total, sale_items(profit)').gte('sale_date', todayStart.split('T')[0]),
+    supabase.from('sales').select('final_total, discount_amount, sale_items(profit)').gte('sale_date', todayStart.split('T')[0]),
     // Monthly sales
-    supabase.from('sales').select('final_total, sale_items(profit)').gte('sale_date', monthStart.split('T')[0]),
+    supabase.from('sales').select('final_total, discount_amount, sale_items(profit)').gte('sale_date', monthStart.split('T')[0]),
     // Total products count
     supabase.from('products').select('id', { count: 'exact', head: true }),
     // All purchase_items for stock calculation
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       .gte('created_at', monthStart),
     // Daily sales for last 7 days
     supabase.from('sales')
-      .select('sale_date, final_total, sale_items(profit)')
+      .select('sale_date, final_total, discount_amount, sale_items(profit)')
       .gte('sale_date', last7Days.split('T')[0])
       .order('sale_date'),
     // Category revenue
@@ -66,12 +66,12 @@ export async function GET(request: NextRequest) {
   // Calculate today stats
   const todayRevenue = todaySales.data?.reduce((s, sale) => s + sale.final_total, 0) ?? 0
   const todayProfit = todaySales.data?.reduce((s, sale) =>
-    s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
+    s + ((sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0) - (sale.discount_amount || 0)), 0) ?? 0
 
   // Calculate monthly stats
   const monthlyRevenue = monthlySales.data?.reduce((s, sale) => s + sale.final_total, 0) ?? 0
   const monthlyProfit = monthlySales.data?.reduce((s, sale) =>
-    s + (sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0), 0) ?? 0
+    s + ((sale.sale_items?.reduce((p: number, si: { profit: number }) => p + si.profit, 0) ?? 0) - (sale.discount_amount || 0)), 0) ?? 0
 
   // Calculate total lifetime revenue
   const lifetimeRevenue = allSales.data?.reduce((s, sale) => s + (sale.final_total || 0), 0) ?? 0
@@ -124,9 +124,9 @@ export async function GET(request: NextRequest) {
 
   // Daily chart data
   const dailyMap = new Map<string, { revenue: number; profit: number }>()
-  dailySales.data?.forEach((sale: { sale_date: string; final_total: number; sale_items: { profit: number }[] }) => {
+  dailySales.data?.forEach((sale: { sale_date: string; final_total: number; discount_amount: number; sale_items: { profit: number }[] }) => {
     const existing = dailyMap.get(sale.sale_date)
-    const profit = sale.sale_items?.reduce((p, si) => p + si.profit, 0) ?? 0
+    const profit = (sale.sale_items?.reduce((p, si) => p + si.profit, 0) ?? 0) - (sale.discount_amount || 0)
     if (existing) {
       existing.revenue += sale.final_total
       existing.profit += profit

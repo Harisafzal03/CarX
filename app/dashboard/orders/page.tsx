@@ -199,7 +199,7 @@ export default function OrdersPage() {
   }
 
   const totalRevenue = sales.reduce((s, sale) => s + sale.final_total, 0)
-  const totalProfit = sales.reduce((s, sale) => s + sale.sale_items.reduce((p, si) => p + si.profit, 0), 0)
+  const totalProfit = sales.reduce((s, sale) => s + sale.sale_items.reduce((p, si) => p + si.profit, 0) - sale.discount_amount, 0)
 
   return (
     <div className="p-6 space-y-6">
@@ -281,7 +281,7 @@ export default function OrdersPage() {
               {loading && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading orders...</TableCell></TableRow>}
               {!loading && sales.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No orders found.</TableCell></TableRow>}
               {sales.map(sale => {
-                const profit = sale.sale_items.reduce((p, si) => p + si.profit, 0)
+                const profit = sale.sale_items.reduce((p, si) => p + si.profit, 0) - sale.discount_amount
                 return (
                   <TableRow key={sale.id}>
                     <TableCell className="font-medium">{sale.customer_name || 'Walk-in'}</TableCell>
@@ -348,7 +348,7 @@ export default function OrdersPage() {
                 <div className="flex justify-between font-bold text-base"><span>Total</span><span style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(selected.final_total)}</span></div>
                 <div className="flex justify-between" style={{ color: 'hsl(142 71% 45%)' }}>
                   <span>Net Profit</span>
-                  <span className="font-semibold">{formatCurrency(selected.sale_items.reduce((p, si) => p + si.profit, 0))}</span>
+                  <span className="font-semibold">{formatCurrency(selected.sale_items.reduce((p, si) => p + si.profit, 0) - selected.discount_amount)}</span>
                 </div>
               </div>
               <Separator />
